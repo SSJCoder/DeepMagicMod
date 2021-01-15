@@ -1,0 +1,355 @@
+&SpellsOpen {
+	// take screenshot
+	&ptr = false; screen_redraw();
+	s_screenshot~= sprite_create_from_screen( 0, 0, view_wview[0], view_hview[0], 0, 0, 0, 0 );
+	&ptr = true;
+	
+	// clear input
+	$KeysClear();
+	
+	// main loop
+	gate~= true;
+	@loop (gate) {
+		// run ..
+		@with (&oMain) { evperf( 'step-begin' ) }
+		@with (&oBGM)  { evperf( 'step-end' ) }
+		
+		@with (oChar) {
+			@test ( KeyPressed( ESC ) || KeyPressed( key_spells ) ) {
+				!gate;
+			}
+		}
+		
+		// gate check
+		@test ( !gate ) { @stop }
+		
+		// update spell hovered
+		hov~= &SpellGetHov();
+		
+		// update tip
+		@test ( hov != -1 ) {
+			@test ( &spell_lock[hov] ) {
+				&SetTipText( 'locked' );
+			} @else {
+				&SetTipSpell( &spells[hov] );
+			}
+		} @else {
+			&SetTipNone();
+		}
+		
+		// update spell selection
+		@test ( KeyPressed( LMB ) ) {
+			@test ( hov != -1 ) {
+				@test ( !&spell_lock[hov] ) {
+					@test ( &spell_LMB == hov ) {
+						&spell_LMB = -1;
+					} @else {
+						&spell_LMB = hov;
+					}
+				}
+			}
+		}
+		
+		@test ( KeyPressed( RMB ) ) {
+			@test ( hov != -1 ) {
+				@test ( !&spell_lock[hov] ) {
+					@test ( &spell_RMB == hov ) {
+						&spell_RMB = -1;
+					} @else {
+						&spell_RMB = hov;
+					}
+				}
+			}
+		}
+		
+		/** DRAW **/
+		draw_sprite( s_screenshot, 0, 0, 0 );
+		draw_sprite( sBackSpells, 0, 0, 0 );
+		
+		// draw spells
+		v~=0; @loop (v<4) {
+			h~=0; @loop (h<9) {
+				i~= v*9+h;
+				sel~= 0;
+				@test ( &spell_LMB == i ) {
+					@test ( &spell_RMB == i ) {
+						sel = 3;
+					} @else {
+						sel = 1;
+					}
+				} @elif ( &spell_RMB == i ) {
+					sel = 2;
+				}
+				
+				&DrawSpell( 33+h*48, 80+v*48, &spells[i], &spell_lock[i], sel );
+				
+				h++;
+			}
+			
+			v++;
+		}
+		
+		&DrawTip();
+		
+		// draw pointer
+		draw_sprite( sPointer, 0, px, py );
+		
+		// refresh
+		screen_refresh();
+		sleep( 1000/60 );
+		
+		// quit
+		@test ( &close ) {
+			@stop;
+		}
+		
+	}
+	
+	// clear input
+	$KeysClear();
+	
+}
+
+&SpellGetHov {
+	@test ( px >= 33 && py >= 80 && px < 449 && py < 256 ) {
+		// get relative x/y
+		rx~= px-33;
+		ry~= py-80;
+		
+		// get item being hovered
+		h~= floor( rx/48 );
+		v~= floor( ry/48 );
+		
+		@test ( rx-h*48 < 32 && ry-v*48 < 32 ) {
+			@ret v*9+h;
+		}
+	}
+	
+	@ret -1;
+}
+
+&TierBorderSprite => newMap([
+	'Common',    sSpellBorderWood, 
+	'Uncommon',  sSpellBorderBronze, 
+	'Renown',    sSpellBorderSilver, 
+	'Legendary', sSpellBorderGold
+])
+
+&TierColor => newMap([
+	'Common',    rgb( 0.60, 0.40, 0 ), 
+	'Uncommon',  rgb( 1.0,  0.60, 0.10 ), 
+	'Renown',    rgb( 1.0,  1.0,  1.0 ), 
+	'Legendary', rgb( 1.0,  1.0,  0 )
+])
+
+// &DrawSpell (x, y, spell-data, lock-status, select-status);
+/*
+
+[i], spell-data:
+       * [0]: icon
+	   * [1]: title
+	   * [2]: colour
+	   * [3]: tier
+	   * [4]: description
+	   * [5]: spell-cost
+	   * [6]: spell call
+
+[i], select-status:
+	   * 0: none
+	   * 1: left
+	   * 2: right
+	   * 3: both
+
+*/
+&DrawSpell (x, y, data, lock, sel) {
+	tier~= data[3];
+	 spr~= MapGet( &TierBorderSprite, tier );
+	
+	// draw spell back
+	draw_sprite( spr, lock, x, y );
+	
+	// draw spell icon & selection state
+	@test ( !lock ) {
+		// draw spell icon
+		draw_sprite( data[0], 0, x+4, y+4 );
+		
+		// draw pointer bindings information
+		@test ( sel != 0 ) {
+			@test ( sel == 1 ) {
+				// LMB bound
+				draw_sprite( sPointerIcon, 0, x+32+8, y+16 );
+			} @elif ( sel == 2 ) {
+				// RMB bound
+				draw_sprite( sPointerIcon, 1, x+32+8, y+16 );
+			} @else {
+				// both, icon position (icon-x/y)
+				ix~= x+32+8;
+				iy~= y+16;
+				
+				draw_sprite( sPointerIcon, 0, ix, iy-8 );
+				draw_sprite( sPointerIcon, 1, ix, iy+8 );
+			}
+		}
+		
+	}
+}
+
+// &SetTipSpell (spell-data);
+&SetTipSpell (data) {
+	&tip_type  = 0;
+	&tip_title = data[1];
+	&tip_color = data[2];
+	&tip_tier  = data[3];
+	&tip_desc  = data[4];
+	
+	// limit description width
+	draw_set_font( ft_stats );
+	&tip_desc = strlw( &tip_desc, 180 );
+	
+	// determine tip dimensions
+	&tip_wd = max( string_width(&tip_title), string_width(&tip_tier), string_width(&tip_desc) );
+	&tip_ht = string_height(&tip_title)+string_height(&tip_tier)+ 8 +string_height(&tip_desc);
+	
+}
+
+// &SetTipText (text);
+&SetTipText (txt) {
+	&tip_type = 1;
+	&tip_desc = txt;
+	
+	// limit description width
+	draw_set_font( ft_stats );
+	&tip_desc = strlw( &tip_desc, 180 );
+	
+	// determine tip dimensions
+	&tip_wd = string_width(&tip_desc);
+	&tip_ht = string_height(&tip_desc);
+	
+}
+
+// &SetTipNone ();
+&SetTipNone {
+	&tip_type = -1;
+}
+
+&DrawTip {
+	@test ( &tip_type != -1 ) {
+		@test ( &tip_type == 0 ) {
+			&DrawTipSpell();
+		} @else {
+			&DrawTipText();
+		}
+	}
+}
+
+&DrawTipSpell {
+	mar~= 4;
+	
+	// get tip dimensions
+	rwd~= &tip_wd+mar*2;
+	rht~= &tip_ht+mar*2;
+	
+	// get tip coordinates
+	x~= px+(sprite_get_width(sPointer)-sprite_get_xoffset(sPointer))+4;
+	y~= py-round(rht/2);
+	
+	@test ( x+rwd+mar < view_wview[0] ) {
+		// we gud. limit top/bottom
+		y = clamp( mar, view_hview[0]-mar-rht, y );
+	} @else {
+		@test ( py < view_hview[0]/2 ) {
+			// pointer high up
+			// find new coordinates
+			y = py+(sprite_get_height(sPointer)-sprite_get_yoffset(sPointer))+4;
+			
+			// limit right-hand position
+			x = min( x, view_wview[0]-mar-rwd );
+		} @else {
+			// pointer low
+			// find new coordinates
+			y = py-sprite_get_yoffset(sPointer)-mar-rht;
+			
+			// limit right-hand position
+			x = min( x, view_wview[0]-mar-rwd );
+		}
+	}
+	
+	// draw back
+	draw_style( c_black, 0.65 );
+	draw_roundrect( x, y, x+rwd, y+rht, false );
+
+    // draw title
+    x+=mar;
+    y+=mar;
+	
+	draw_style( &tip_color, 1.0, ft_stats, fa_left, fa_top );
+	draw_text( x, y, &tip_title );
+	y+=string_height(&tip_title);
+	
+	// draw tier
+	col~= MapGet( &TierColor, &tip_tier );
+	draw_style( col, 1.0 );
+	cd~; // color-dark
+	@test ( &tip_tier == 'Common' || &tip_tier == 'Uncommon' ) {
+		cd = make_color_hsv( color_get_hue(col), color_get_saturation(col)*0.50, color_get_value(col)*0.15 );
+	} @else {
+		cd = make_color_hsv( color_get_hue(col), color_get_saturation(col)*0.80, color_get_value(col)*0.80 );
+	}
+	
+	draw_text_color( x, y, &tip_tier, col, col, cd, cd, 1.0 );
+	y+=string_height(&tip_tier)+8;
+	
+    // draw description
+	draw_style( c_ltgray, 1.0 );
+	@test ( &tip_tier == 'Legendary' || &tip_tier == 'Renown' ) {
+		draw_style( c_white );
+	}
+	
+	draw_text( x, y, &tip_desc );
+	
+}
+
+&DrawTipText {
+	mar~= 4;
+	
+	// get tip dimensions
+	rwd~= &tip_wd+mar*2;
+	rht~= &tip_ht+mar*2;
+	
+	// get tip coordinates
+	x~= px+(sprite_get_width(sPointer)-sprite_get_xoffset(sPointer))+4;
+	y~= py-round(rht/2);
+	
+	@test ( x+rwd+mar < view_wview[0] ) {
+		// we gud. limit top/bottom
+		y = clamp( mar, view_hview[0]-mar-rht, y );
+	} @else {
+		@test ( py < view_hview[0]/2 ) {
+			// pointer high up
+			// find new coordinates
+			y = py+(sprite_get_height(sPointer)-sprite_get_yoffset(sPointer))+4;
+			
+			// limit right-hand position
+			x = min( x, view_wview[0]-mar-rwd );
+		} @else {
+			// pointer low
+			// find new coordinates
+			y = py-sprite_get_yoffset(sPointer)-mar-rht;
+			
+			// limit right-hand position
+			x = min( x, view_wview[0]-mar-rwd );
+		}
+	}
+	
+	// draw back
+	draw_style( c_black, 0.65 );
+	draw_roundrect( x, y, x+rwd, y+rht, false );
+	
+	// draw description
+	x+=mar;
+	y+=mar;
+	
+	draw_style( c_ltgray, 1.0, ft_stats, fa_left, fa_top );
+	draw_text( x, y, &tip_desc );
+}
+

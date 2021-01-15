@@ -1,0 +1,55 @@
+&close => false;
+
+@onmain -2000 {
+	logclr();
+	room_goto_next();
+}
+
+&oMain => object_add();
+@onmain 2000 {
+	event( &oMain, 'step-begin', @fn {
+		$run();
+		$debugTools();
+		$KeysUpdate();
+		
+		// hold escape to exit
+		@test ( keyboard_check( vk_escape ) ) {
+			$esc_tmr+=ts;
+			@test ( $esc_tmr >= 0.5 ) { game_end() }
+		} @else {
+			$esc_tmr = 0;
+		}
+		
+	});
+	
+	event( &oMain, 'step-end', @fn {
+		@test ( &close ) {
+			!&close;
+			game_end();
+		}
+	});
+	
+	event( &oMain, 'draw', @fn {
+		//str~= 'px: '+stri(px)+', py: '+stri(py)+', Gems Are Truly Outrageous !';
+		
+		//draw_style( c_white, 1.0, -1, fa_left, fa_top );
+		//draw_text( view_xview[0]+20, view_yview[0]+20, strlw( str, max( 10, px-20 ) ) );
+		
+		// draw darkness
+		&DarknessDraw();
+		// draw GUI
+		&GUI_draw();
+	});
+	
+	event( &oMain, 'close', @fn {
+		&close = true;
+	});
+	
+	@with (create( &oMain )) {
+		persistent = true;
+		depth = -5000;
+	}
+}
+
+$esc_tmr => 0;
+

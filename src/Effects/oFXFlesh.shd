@@ -1,0 +1,45 @@
+&newFXFlesh (x, y, size_, life_) {
+	@with (create( x, y, &oFXFlesh )) {
+		// set depth
+		depth = -1000;
+		
+		// store time
+		time = Time();
+		
+		// set properties
+		size = size_;
+		life = life_;
+		
+		// set sprite & mask
+		sprite_index = sFXFlesh;
+		
+		@ret id;
+		
+	}
+}
+
+&oFXFlesh => object_add();
+@onmain {
+	event( &oFXFlesh, 'step', @fn {
+		// lifetime
+		@test ( Time()-time > life ) {
+			destroy();
+		}
+		
+	});
+	
+	event( &oFXFlesh, 'draw', @fn {
+		// get time left
+		t~= 1-(Time()-time)/life;
+		
+		// drawing variables
+		image_index  = min( image_number-1, floor( image_number*(1-t) ) );
+		image_xscale = size;
+		image_yscale = size;
+		image_alpha  = 0.7;
+
+		draw_self();
+		
+	});
+}
+

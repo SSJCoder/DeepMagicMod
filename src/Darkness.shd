@@ -1,0 +1,78 @@
+&oDarkness => object_add();
+@onmain {
+	// surface
+	&surf = -1;
+	
+	// pre-multiply light
+	PreMulReplace( sLight );
+	PreMulReplace( sLightHD );
+	
+	event( $oCamera, 'step-end', @fn {
+		&DarknessUpdate();
+	});
+	
+	@with (create(&oDarkness)) {
+		persistent = true;
+	}
+}
+
+&DarknessUpdate {
+	@test ( !surface_exists( &surf ) ) {
+		&surf = surface_create( view_wview[0], view_hview[0] );
+	}
+	
+	@test ( surface_exists( &surf ) ) {
+		surface_set_target( &surf );
+		draw_clear_alpha( rgb( 0.90, 0.95, 0.85 ), 1.0 );
+		draw_set_blend_mode( bm_subtract );
+		
+		// character light
+		@with (oChar) {
+			rx~= round(x)-view_xview[0];
+			ry~= round(y)-view_yview[0];
+			draw_sprite_ext( sLight, 0, rx, ry, 2.0, 2.0, 0, rgb(0.8,0.8,0.8), 1.0 );
+			// draw light at the pointer
+			dis~= point_distance( rx, ry, px, py )
+			 lx~;
+			 ly~;
+			@test ( dis > 192 ) {
+				r~,a~= 192, point_direction( rx, ry, px, py );
+				  lx = rx+round(lenx(r,a));
+				  ly = ry+round(leny(r,a));
+			} @else {
+				lx = px;
+				ly = py;
+			}
+			
+			draw_sprite_ext( sLight, 0, lx, ly, 1.5, 1.5, 0, rgb(0.5,0.5,0.5), 0.65 );
+		}
+		
+		// light flash
+		@with (&oLightFlash) {
+			draw_sprite_ext( sprite_index, image_index, round(x)-view_xview[0], round(y)-view_yview[0], image_xscale, image_yscale, image_angle, image_blend, image_alpha );
+		}
+		
+		// torches
+		@with (oTorch) {
+			draw_sprite_ext( sLightHD, 0, round(x)+rx-view_xview[0], round(y)+ry-view_yview[0], scl2, scl2, 0, merge_color( c_black, col2, 0.8+rand()*0.2 ), 1.0 );
+		}
+		
+		//@with (oTorchLeft) {
+		//	scl~= 192/sprite_get_width(sLight);
+		//	col~= 
+		//	draw_sprite_ext( sLight, 0, round(x)+rx-view_xview[0], round(y)+ry-view_yview[0], scl, scl, 0, col, 1.0 );
+		//}
+		
+		draw_set_blend_mode( bm_normal );
+		surface_reset_target();
+	}
+}
+
+&DarknessDraw {
+	@test ( surface_exists( &surf ) ) {
+		draw_set_blend_mode( bm_subtract );
+		draw_surface( &surf, view_xview[0], view_yview[0] );
+		draw_set_blend_mode( bm_normal );
+	}
+}
+
