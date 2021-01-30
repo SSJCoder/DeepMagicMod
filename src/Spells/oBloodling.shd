@@ -1,0 +1,59 @@
+&newBloodling (x, y, hp_) {
+	@with (create( x, y, &oBloodling )) {
+		// blood fx cooldown
+		cdw_max = 1/24;
+		cdw     = cdw_max;
+		
+		// set speed
+		spd = max( 8, 48 - hp_ );
+		
+		// set health points
+		hp = hp_;
+		
+		// blood fx size
+		//bfx_size = max( hp_,  );
+		
+		onTouchPlayer = @fn {
+			@with (oChar) {
+				CurHp = min( MaxHp, CurHp+other.hp );
+			}
+			gmfx_small( x, y, 'ring', c_red );
+			destroy();
+		}
+		
+		bloodFX = @fn {
+			&newFXBloodDrain( x, y, max(hp,16)*flu(0.20), 1.0*flu(0.25) );
+		}
+		
+		bloodFX();
+		
+		@ret id;
+	}
+}
+
+&oBloodling => object_add();
+@onmain {
+	event( &oBloodling, 'step', @fn {
+		// blood fx
+		cdw-=ts;
+		@test ( cdw <= 0 ) {
+			cdw+=cdw_max;
+			bloodFX();
+		}
+		
+		// move towards player
+		@with (oChar) {
+			r~,a~ = point_distance( x, y, other.x, other.y ), point_direction( other.x, other.y, x, y );
+			  mov~= other.spd*ts;
+			@test ( r < mov+8 ) {
+				@with (other) {
+					onTouchPlayer();
+				}
+			} @else {
+				other.x += lenx( mov, a );
+				other.y += leny( mov, a );
+			}
+		}
+	});
+}
+

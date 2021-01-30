@@ -1,0 +1,191 @@
+// &CharBloodDrainSpell ();
+&CharBloodDrainSpell {
+	// get radius & angle
+	r~,a~ = 6, arm.image_angle;
+	
+	// search out three closest enemies within 45 degrees arc, and 180 pixels
+	// from our character ..
+	list~= []; // [[enemy, distance], ..]
+	// insert (list, enemy, distance);
+	insert~= @fn (list, enm, dis) {
+		ListSize~= list->size;
+		@test ( ListSize != 0 ) {
+			i~=0, e~=min( 3, list->size ); @loop (i<e) {
+				@test ( dis <= list[i][1] ) {
+					ds_list_insert( list, i, [enm, dis] );
+				}
+				i++;
+			}
+		} @else {
+			list->add([enm, dis]);
+		}
+		
+	}
+	
+	@with (oEnemy) {
+		arm~= other.arm;
+		dis~= point_distance( arm.x, arm.y, x, y );
+		@test ( dis <= 180 ) {
+			dir~= point_direction( arm.x, arm.y, x, y );
+			
+			@test ( ttw( a, dir, 45 ) == dir ) {
+				// insert enemy to list
+				insert( list, id, dis );
+			}
+		}
+	}
+	
+	@test ( list->size != 0 ) {
+		// thrust fx
+		&newFXSpellThrust( arm.x+lenx(r,a), arm.y+leny(r,a), c_red, 18, a, 0.35 );
+		
+		// sfx
+		caster_play( &sfxBloodDrainSpell, 0.60*flu( 0.20 ), flu( 0.20 ) );
+		
+		// hit closest 3 enemies
+		i~=0; @loop (i<3) {
+			@with (list[i][0]) {
+				// deal damage
+				// blood drain deals damage of 15 + 15 % current HP, and penetrates
+				// all armour
+				// it heals you up to 25 HP, 25 % of damage .. (100 dmg = cap)
+				dmg~= 15 + CurHp*0.15;
+				&DealDamage( id, dmg, 1.0, x, y );
+				
+				// create bloodling
+				heal~= min( 25, dmg*0.25 );
+				&newBloodling( x, y, heal );
+			}
+			i++;
+		}
+	} @else {
+		// clear cooldown
+		Cdw = 0;
+		log( 'list empty' );
+	}
+	
+	// free enemy list
+	list->free();
+	
+}
+
+&newBloodDrainSpell (x, y, rot_, dmg_) {
+	@with (create( x, y, &oBloodDrainSpell )) {
+		// set depth
+		depth = -125;
+		
+		// set properties
+		rot = rot_;
+		dmg = dmg_;
+		
+		// set speed
+		spd = 500 * flc( 0.2 );
+		
+		// set sprite & mask
+		sprite_index = sBloodDrainSpell;
+		image_angle  = rot_;
+		
+		// stop animation
+		image_speed = 0;
+
+		// default size
+		size = flu( 0.2 );
+		
+		UpdateScaling = @fn {
+			a~= Time()*2*pi*3.5;
+			image_xscale = size*(1+cos(a)*0.20);
+			image_yscale = size*(1+sin(a)*0.20);
+		}
+		
+		UpdateScaling();
+		
+		// no destroy fx
+		NoFXFlag = 0;
+		
+		onDestroyFX = @fn {
+			//&newFXBeam( x, y, c_aqua, 18, 0.20 );
+			
+			xoff~= sprite_get_xoffset( sprite_index );
+			yoff~= sprite_get_yoffset( sprite_index );
+			
+			i~=0; @loop (i<4) {
+				r1~,a1~ = xoff*rand()*choose(-1,1), rot;
+				r2~,a2~ = yoff*rand()*choose(-1,1), rot+90;
+				&newFXSparkleDisperse( x+lenx(r1,a1)+lenx(r2,a2), y+leny(r1,a1)+leny(r2,a2), &SP_MEDIUM, 5, c_aqua, rand()*360, 20, 20, 0.50 );
+				i++;
+			}
+		}
+		
+		@ret id;
+		
+	}
+}
+
+&oBloodDrainSpell => object_add();
+@onmain {
+	// load sfx
+	&sfxBloodDrainSpell = caster_load( 'data/sounds/sfxBloodDrainSpell.ogg' );
+	caster_loop( caster_load( 'data/sounds/atmCave.ogg' ), 1.0, 1.0 );
+	
+	LightEnable( &oBloodDrainSpell );
+	
+	event( &oBloodDrainSpell, 'step', @fn {
+		// particles
+		&newFXSparkleDisperse( x, y, &SP_SMALL, 3, c_aqua, rand()*360, 25+rand()*50, 100, 0.35 );
+		
+		// move
+		x+=lenx(spd*ts,rot);
+		y+=leny(spd*ts,rot);
+		
+		// update scaling
+		UpdateScaling();
+		
+		@test ( place_meeting( x, y, oBlock ) ) {
+			// fx
+			@test ( !NoFXFlag ) {
+				onDestroyFX();
+			}
+			// destroy
+			destroy();
+		}
+		
+		@test ( is_outside() ) {
+			destroy();
+		}
+		
+		enm~= instance_place( x, y, oEnemy );
+		@test ( enm != noone ) {
+			// deal damage to enemy
+			&DealDamage( enm, dmg, 0.0 );
+			
+			// fx
+			onDestroyFX();
+			
+			// clear spell
+			destroy();
+		}
+		
+		@test ( place_meeting( x, y, oLavaTop ) ) {
+			NoFXFlag = 1;
+			   depth = 1500;
+		}
+		
+		wasp~= instance_place( x, y, oWasp );
+		@test ( wasp != noone ) {
+			destroy( wasp );
+		}
+		
+		drawLight = @fn {
+			draw_sprite_ext( sLight, 0, round(x)-view_xview[0], round(y)-view_yview[0], 48/sprite_get_width(sLight), 24/sprite_get_height(sLight), rot, merge_color( c_black, c_aqua, 0.35 ), 1.0 );
+		}
+		
+	});
+	
+	event( &oBloodDrainSpell, 'draw', @fn {
+		draw_set_blend_mode( bm_add );
+		draw_self();
+		draw_set_blend_mode( bm_normal );
+		
+	});
+}
+

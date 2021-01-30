@@ -1,0 +1,60 @@
+@onmain {
+	Interval( 0.125, @fn {
+		@test ( mouse_check_button( mb_left ) ) {
+			//&newBloodling( view_xview[0]+px, view_yview[0]+py, 1+rand()*31 );
+		}
+		
+		//&newFXBloodDrain( view_xview[0]+px, view_yview[0]+py, 16+rand()*16, 1.0 );
+	});
+}
+
+// &newFXBloodDrain (x, y, pixel-size, lifetime);
+&newFXBloodDrain (x, y, px_, life_) {
+	@with (create( x, y, &oFXBloodDrain )) {
+		// set depth
+		depth = -1000;
+		// set sprite & image
+		sprite_index = sFXBloodDrain;
+		 image_index = floor( rand()*sprite_get_number(sprite_index) );
+		 image_angle = rand()*360;
+		
+		// store time
+		time = Time();
+		
+		// set properties
+		size = px_/((sprite_get_width(sprite_index)+sprite_get_height(sprite_index))/2);
+		life = life_;
+		
+		@ret id;
+		
+	}
+}
+
+&oFXBloodDrain => object_add();
+@onmain {
+	event( &oFXBloodDrain, 'step', @fn {
+		// lifetime
+		@test ( Time()-time > life ) {
+			destroy();
+		}
+		
+	});
+	
+	event( &oFXBloodDrain, 'draw', @fn {
+		// get time left
+		t~= 1-(Time()-time)/life;
+		
+		// drawing variables
+		image_index  = min( image_number-1, floor( image_number*(1-t) ) );
+		image_xscale = size*power(t,2);
+		image_yscale = image_xscale;
+		image_alpha  = 0.7*t;
+		
+		draw_set_blend_mode( bm_add );
+		image_blend = c_red;
+		draw_self();
+		draw_set_blend_mode( bm_normal );
+		
+	});
+}
+

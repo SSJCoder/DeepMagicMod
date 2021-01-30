@@ -1,0 +1,132 @@
+// &CharLightSpell (damage);
+&CharLightSpell (dmg) {
+	// cast light spell
+	r~, a~ = 6, arm.image_angle;
+	&newLightSpell( arm.x+lenx(r,a), arm.y+leny(r,a), a, dmg );
+	&newFXSpellThrust( arm.x+lenx(r,a), arm.y+leny(r,a), c_white, 10, a, 0.15 );
+	
+	// sfx
+	caster_play( &sfxLightSpell, 0.20*flu( 0.20 ), flu( 0.20 ) );
+	
+}
+
+&newLightSpell (x, y, rot_, dmg_) {
+	@with (create( x, y, &oLightSpell )) {
+		// set depth
+		depth = -125;
+		
+		// set properties
+		rot = rot_;
+		dmg = dmg_;
+		
+		// set speed
+		spd = 500 * flc( 0.2 );
+		
+		// set sprite & mask
+		sprite_index = sLightSpell;
+		image_angle  = rot_;
+		
+		// stop animation
+		image_speed = 0;
+
+		// default size
+		size = flu( 0.2 );
+		
+		UpdateScaling = @fn {
+			a~= Time()*2*pi*3.5;
+			image_xscale = size*(1+cos(a)*0.20);
+			image_yscale = size*(1+sin(a)*0.20);
+		}
+		
+		UpdateScaling();
+		
+		// no destroy fx
+		NoFXFlag = 0;
+		
+		onDestroyFX = @fn {
+			//&newFXBeam( x, y, c_aqua, 18, 0.20 );
+			
+			xoff~= sprite_get_xoffset( sprite_index );
+			yoff~= sprite_get_yoffset( sprite_index );
+			
+			i~=0; @loop (i<4) {
+				r1~,a1~ = xoff*rand()*choose(-1,1), rot;
+				r2~,a2~ = yoff*rand()*choose(-1,1), rot+90;
+				&newFXSparkleDisperse( x+lenx(r1,a1)+lenx(r2,a2), y+leny(r1,a1)+leny(r2,a2), &SP_MEDIUM, 5, c_aqua, rand()*360, 20, 20, 0.50 );
+				i++;
+			}
+		}
+		
+		@ret id;
+		
+	}
+}
+
+&oLightSpell => object_add();
+@onmain {
+	// load sfx
+	&sfxLightSpell = caster_load( 'data/sounds/sfxLightSpell.ogg' );
+	caster_loop( caster_load( 'data/sounds/atmCave.ogg' ), 1.0, 1.0 );
+	
+	LightEnable( &oLightSpell );
+	
+	event( &oLightSpell, 'step', @fn {
+		// particles
+		&newFXSparkleDisperse( x, y, &SP_SMALL, 3, c_aqua, rand()*360, 25+rand()*50, 100, 0.35 );
+		
+		// move
+		x+=lenx(spd*ts,rot);
+		y+=leny(spd*ts,rot);
+		
+		// update scaling
+		UpdateScaling();
+		
+		@test ( place_meeting( x, y, oBlock ) ) {
+			// fx
+			@test ( !NoFXFlag ) {
+				onDestroyFX();
+			}
+			// destroy
+			destroy();
+		}
+		
+		@test ( is_outside() ) {
+			destroy();
+		}
+		
+		enm~= instance_place( x, y, oEnemy );
+		@test ( enm != noone ) {
+			// deal damage to enemy
+			&DealDamage( enm, dmg, 0.0 );
+			
+			// fx
+			onDestroyFX();
+			
+			// clear spell
+			destroy();
+		}
+		
+		@test ( place_meeting( x, y, oLavaTop ) ) {
+			NoFXFlag = 1;
+			   depth = 1500;
+		}
+		
+		wasp~= instance_place( x, y, oWasp );
+		@test ( wasp != noone ) {
+			destroy( wasp );
+		}
+		
+		drawLight = @fn {
+			draw_sprite_ext( sLight, 0, round(x)-view_xview[0], round(y)-view_yview[0], 48/sprite_get_width(sLight), 24/sprite_get_height(sLight), rot, merge_color( c_black, c_aqua, 0.35 ), 1.0 );
+		}
+		
+	});
+	
+	event( &oLightSpell, 'draw', @fn {
+		draw_set_blend_mode( bm_add );
+		draw_self();
+		draw_set_blend_mode( bm_normal );
+		
+	});
+}
+

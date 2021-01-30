@@ -1,0 +1,106 @@
+&ptr => true;
+
+@onmain {
+	//&sfxCur = caster_load( 'data/sounds/cur.ogg' );
+}
+
+&GUI_draw {
+	/*@test ( KeyHeld( MMB ) ) {
+		@test ( !caster_is_playing( &sfxZzz ) ) {
+			base~= .15+rand()*.85;
+			@test ( rand() < 0.50 ) {
+				base*=8;
+			}
+			caster_loop( &sfxCur, 1.0, base );
+		}
+	} @else {
+		@test ( caster_is_playing( &sfxZzz ) ) {
+			caster_stop( &sfxCur );
+		}
+	}*/
+	
+	@with (oChar) {
+		pwx~= view_xview[0]+10;
+		pwy~= view_yview[0]+view_hview[0]-10-sprite_get_height(sOrb);
+		
+		&DrawPowerOrb( pwx, pwy, max( 0, CurMp/MaxMp ) );
+		
+		ox~= pwx;
+		oy~= pwy-4-sprite_get_height(sOrb);
+		
+		&DrawHealthOrb( ox, oy, max( 0, CurHp/MaxHp ) );
+		
+		// draw amounts
+		txo~= sprite_get_width(sOrb)+4;           // text-x-offset
+		tyo~= round(sprite_get_height(sOrb)*0.5); // text-y-offset
+		
+		// power
+		draw_style( c_aqua, 1.0, ft_stats, fa_left, fa_center );
+		//draw_text( pwx+txo, pwy+tyo, floor( max( 0, CurMp ) ) );
+		DrawTextGlow( pwx+txo, pwy+tyo, floor( max( 0, CurMp ) ), c_aqua, 1.0, rgb( 0, 0, 0.1 ), 1.0, 1.0 );
+		
+		// health
+		draw_style( c_red );
+		//draw_text( ox+txo, oy+tyo, ceil( max( 0, CurHp ) ) );
+		DrawTextGlow( ox+txo, oy+tyo, ceil( max( 0, CurHp ) ), c_red, 1.0, rgb( 0, 0, 0.1 ), 1.0, 1.0 );
+		
+		//&DrawSpell( x+32, y, &spells[0], px>100, floor(py/100) );
+	}
+	
+	// draw pointer
+	@test ( &ptr ) {
+		draw_sprite_ext( sPointer, 0, view_xview[0]+px, view_yview[0]+py, 1.0, 1.0, 0, c_white, 0.35 );
+	}
+	
+}
+
+&DrawHealthOrb (x, y, pct) {
+	// draw back
+	draw_sprite( sOrb, 0, x, y );
+	
+	// get orb health sprite information
+	wd~= sprite_get_width( sOrbHealth );
+	ht~= sprite_get_height( sOrbHealth );
+	partHt~= ceil( ht*pct );
+	
+	// part x/y & width
+	part_x~= x+6;
+	part_y~= y+7+ht-1-partHt;
+	partWd~= wd;
+	
+	// left & top
+	left~= 0;
+	 top~= ht-partHt;
+	
+	// draw
+	draw_sprite_part( sOrbHealth, 0, left, top, partWd, partHt, part_x, part_y );
+	
+}
+
+&DrawPowerOrb (x, y, pct) {
+	// draw back
+	draw_sprite( sOrb, 0, x, y );
+	
+	// get orb health sprite information
+	wd~= sprite_get_width( sOrbPower );
+	ht~= sprite_get_height( sOrbPower );
+	partHt~= floor( ht*pct );
+	
+	// part x/y & width
+	part_x~= x+5;
+	part_y~= y+6+ht-1-partHt;
+	partWd~= wd;
+	
+	// left & top
+	left~= 0;
+	 top~= ht-partHt;
+	
+	// draw part
+	draw_sprite_part( sOrbPower, 0, left, top, partWd, partHt, part_x, part_y );
+	
+	// draw shine
+	img~= (Time()*3) % sprite_get_number(sOrbPowerShine);
+	draw_sprite_part( sOrbPowerShine, img, left, top, partWd, partHt, part_x, part_y );
+	
+}
+

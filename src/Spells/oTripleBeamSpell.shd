@@ -1,0 +1,128 @@
+// triple beam spell = 55 DPS
+
+// &CharTripleBeamSpell (damage);
+&CharTripleBeamSpell (dmg) {
+	// cast spell
+	dmg /= 3;
+	r~, a~ = 6, arm.image_angle;
+	&newTripleBeamFragment( arm.x+lenx(r,a), arm.y+leny(r,a), a, dmg );
+	a -= 20; &newTripleBeamFragment( arm.x+lenx(r,a), arm.y+leny(r,a), a, dmg );
+	a += 40; &newTripleBeamFragment( arm.x+lenx(r,a), arm.y+leny(r,a), a, dmg );
+	&newFXSpellThrust( arm.x+lenx(r,a), arm.y+leny(r,a), c_yellow, 12, a, 0.20 );
+	
+	// sfx
+	caster_play( &sfxTripleBeamSpell, 0.20*flu( 0.20 ), flu( 0.35 ) );
+	
+}
+
+// &newTripleBeamFragment (x, y, rotation, damage);
+&newTripleBeamFragment (x, y, rot_, dmg_) {
+	@with (create( x, y, &oTripleBeamFragment )) {
+		// set depth
+		depth = -125;
+		
+		// set sprite & mask
+		sprite_index = sTripleBeamSpell;
+		image_angle  = rot_;
+		
+		// stop animation
+		image_speed = 0;
+		
+		// set properties
+		rot = rot_;
+		dmg = dmg_;
+		
+		// set speed
+		spd = 500 * flu( 0.2 );
+		
+		// default size
+		size = flu( 0.2 );
+		
+		// no destroy fx
+		NoFXFlag = 0;
+		
+		onDestroyFX = @fn {
+			//&newFXBeam( x, y, c_yellow, 24, 0.35 );
+			
+			xoff~= sprite_get_xoffset( sprite_index );
+			yoff~= sprite_get_yoffset( sprite_index );
+			
+			i~=0; @loop (i<10) {
+				r1~,a1~ = xoff*rand()*choose(-1,1), rot;
+				r2~,a2~ = yoff*rand()*choose(-1,1), rot+90;
+				&newFXSparkleDisperse( x+lenx(r1,a1)+lenx(r2,a2), y+leny(r1,a1)+leny(r2,a2), &SP_MEDIUM, 5, c_yellow, rand()*360, 20, 20, 0.50 );
+				i++;
+			}
+			
+		}
+		
+		@ret id;
+		
+	}
+}
+
+&oTripleBeamFragment => object_add();
+@onmain {
+	&sfxTripleBeamSpell = caster_load( 'data/sounds/sfxTripleBeamSpell.ogg' );
+	
+	LightEnable( &oTripleBeamFragment );
+	
+	event( &oTripleBeamFragment, 'step', @fn {
+		// particles
+		xoff~ = sprite_get_xoffset( sprite_index );
+		r~,a~ = xoff*rand()*choose(-1,1), rot;
+		&newFXSparkleFall( x+lenx(r,a), y+leny(r,a), &SP_SMALL, 3, c_yellow, rand()*360, 15+rand()*15, 35, 200, 0.75 );
+		
+		// move
+		x+=lenx(spd*ts,rot);
+		y+=leny(spd*ts,rot);
+		
+		@test ( place_meeting( x, y, oBlock ) ) {
+			// fx
+			@test ( !NoFXFlag ) {
+				onDestroyFX();
+			}
+			// destroy
+			destroy();
+		}
+		
+		@test ( is_outside() ) {
+			destroy();
+		}
+		
+		enm~= instance_place( x, y, oEnemy );
+		@test ( enm != noone ) {
+			// deal damage to enemy
+			&DealDamage( enm, dmg, 0.0 );
+			
+			// fx
+			onDestroyFX();
+			
+			// clear spell
+			destroy();
+		}
+		
+		@test ( place_meeting( x, y, oLavaTop ) ) {
+			NoFXFlag = 1;
+			   depth = 1500;
+		}
+		
+		wasp~= instance_place( x, y, oWasp );
+		@test ( wasp != noone ) {
+			destroy( wasp );
+		}
+		
+		drawLight = @fn {
+			draw_sprite_ext( sLight, 0, round(x)-view_xview[0], round(y)-view_yview[0], 96/sprite_get_width(sLight), 48/sprite_get_height(sLight), rot, merge_color( c_black, c_yellow, 0.65 ), 1.0 );
+		}
+		
+	});
+	
+	event( &oTripleBeamFragment, 'draw', @fn {
+		draw_set_blend_mode( bm_add );
+		draw_self();
+		draw_set_blend_mode( bm_normal );
+		
+	});
+}
+

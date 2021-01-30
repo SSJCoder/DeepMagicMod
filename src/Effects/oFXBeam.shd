@@ -1,0 +1,48 @@
+// &newFXBeam (x, y, colour, pixel-size, lifetime);
+&newFXBeam (x, y, color_, px_, life_) {
+	@with (create( x, y, &oFXBeam )) {
+		// set depth
+		depth = -1000;
+		
+		// store time
+		time = Time();
+		
+		// set sprite
+		sprite_index = sFXBeam;
+		
+		// set properties
+		color = color_;
+		 size = px_/sprite_get_width(sprite_index);
+		 life = life_;
+		
+		@ret id;
+		
+	}
+}
+
+&oFXBeam => object_add();
+@onmain {
+	event( &oFXBeam, 'step', @fn {
+		// lifetime
+		@test ( Time()-time > life ) {
+			destroy();
+		}
+	});
+	
+	event( &oFXBeam, 'draw', @fn {
+		// get time left
+		t~= 1-(Time()-time)/life;
+		
+		// drawing variables
+		image_xscale = size*(1+0.3*(1-t));
+		image_yscale = size*(1+0.3*(1-t));
+		image_blend  = color;
+		image_alpha  = rand()*t;
+		
+		draw_set_blend_mode( bm_add );
+		draw_self();
+		draw_set_blend_mode( bm_normal );
+		
+	});
+}
+

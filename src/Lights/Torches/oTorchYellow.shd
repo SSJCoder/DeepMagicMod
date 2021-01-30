@@ -1,0 +1,47 @@
+@onmain {
+	&torch_col1_yellow = merge_color( c_black, c_yellow, 0.35 ); // inner colour
+	&torch_col2_yellow = c_yellow; // outer colour
+	
+	event( oTorchYellowLeft, 'step-end', &TorchStepEnd );
+	event( oTorchYellowLeft, 'draw', &TorchDraw );
+	event( oTorchYellowLeft, 'create', @fn {
+		// stop animation
+		image_speed = 0;
+		image_index = rand()*sprite_get_number(sprite_index);
+		
+		// relative light x/y
+		rx = 7;
+		ry = 5;
+		
+		// light scaling/colour
+		scl1 = &torch_scl1; // inner scaling
+		scl2 = &torch_scl2; // outer scaling
+		col1 = &torch_col1_yellow; // inner colour
+		col2 = &torch_col2_yellow; // outer colour
+		
+		// draw-light function
+		drawLight = &TorchDrawLight;
+	});
+	
+	event( oTorchYellowRight, 'step-end', &TorchStepEnd );
+	event( oTorchYellowRight, 'draw', &TorchDraw );
+	event( oTorchYellowRight, 'create', @fn {
+		// stop animation
+		image_speed = 0;
+		image_index = rand()*sprite_get_number(sprite_index);
+		
+		// relative light x/y
+		rx = 8;
+		ry = 5;
+		
+		// light scaling/colour
+		scl1 = &torch_scl1; // inner scaling
+		scl2 = &torch_scl2; // outer scaling
+		col1 = &torch_col1_yellow; // inner colour
+		col2 = &torch_col2_yellow; // outer colour
+		
+		// draw-light function
+		drawLight = &TorchDrawLight;
+	});
+}
+

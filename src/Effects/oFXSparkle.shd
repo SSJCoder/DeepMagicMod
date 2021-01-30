@@ -1,0 +1,49 @@
+// &SparkleInit (type, pixel-size, colour, run-function, draw-function);
+// [i], type: &SP_SMALL / &SP_MEDIUM
+&SparkleInit (type, px, col, rnfn_, dwfn_) {
+	// set sprite
+	sprite_index = type;
+	// set size
+	size = px/(sprite_get_width(sprite_index)-2);
+	// sprite scaling
+	image_xscale = size;
+	image_yscale = size;
+	// set light size
+	lightScaleMax = (px * 16/3)/sprite_get_width(sLight);
+	lightScaleCur = lightScaleMax;
+	// set colour
+	image_blend = col;
+	
+	// draw light function
+	drawLight = @fn {
+		draw_sprite_ext( sLight, 0, round(x)-view_xview[0], round(y)-view_yview[0], lightScaleCur, lightScaleCur, 0, merge_color( c_black, c_white, 0.25+rand()*0.10 ), 1.0 );
+	}
+	
+	// set functions
+	rnfn = rnfn_;
+	dwfn = dwfn_;
+	
+}
+
+&SparkleDraw {
+	draw_set_blend_mode( bm_add );
+	draw_self();
+	draw_set_blend_mode( bm_normal );
+}
+
+&oFXSparkle => object_add();
+@onmain {
+	LightEnable( &oFXSparkle );
+	
+	event( &oFXSparkle, 'step-begin', @fn {
+		rnfn();
+	});
+	
+	event( &oFXSparkle, 'draw', @fn {
+		dwfn();
+	});
+}
+
+&SP_SMALL  => sFXSparkleSmall;
+&SP_MEDIUM => sFXSparkleMedium;
+

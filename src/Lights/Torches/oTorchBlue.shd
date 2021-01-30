@@ -1,0 +1,47 @@
+@onmain {
+	&torch_col1_blue = merge_color( c_black, c_blue, 0.35 ); // inner colour
+	&torch_col2_blue = c_blue; // outer colour
+	
+	event( oTorchBlueLeft, 'step-end', &TorchStepEnd );
+	event( oTorchBlueLeft, 'draw', &TorchDraw );
+	event( oTorchBlueLeft, 'create', @fn {
+		// stop animation
+		image_speed = 0;
+		image_index = rand()*sprite_get_number(sprite_index);
+		
+		// relative light x/y
+		rx = 7;
+		ry = 5;
+		
+		// light scaling/colour
+		scl1 = &torch_scl1; // inner scaling
+		scl2 = &torch_scl2; // outer scaling
+		col1 = &torch_col1_blue; // inner colour
+		col2 = &torch_col2_blue; // outer colour
+		
+		// draw-light function
+		drawLight = &TorchDrawLight;
+	});
+	
+	event( oTorchBlueRight, 'step-end', &TorchStepEnd );
+	event( oTorchBlueRight, 'draw', &TorchDraw );
+	event( oTorchBlueRight, 'create', @fn {
+		// stop animation
+		image_speed = 0;
+		image_index = rand()*sprite_get_number(sprite_index);
+		
+		// relative light x/y
+		rx = 8;
+		ry = 5;
+		
+		// light scaling/colour
+		scl1 = &torch_scl1; // inner scaling
+		scl2 = &torch_scl2; // outer scaling
+		col1 = &torch_col1_blue; // inner colour
+		col2 = &torch_col2_blue; // outer colour
+		
+		// draw-light function
+		drawLight = &TorchDrawLight;
+	});
+}
+

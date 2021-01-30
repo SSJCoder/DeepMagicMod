@@ -1,0 +1,53 @@
+&drawBlackTorchDarkness {
+	draw_sprite_ext( sLightHD, 0, round(x)+rx-view_xview[0], round(y)+ry-view_yview[0], scl2, scl2, 0, merge_color( c_black, col2, 0.90+rand()*0.05 ), 1.0 );
+}
+
+@onmain {
+	DarknessEnable( oDarkTorch );
+	
+	&torch_col1_black = merge_color( c_black, c_black, 0.35 ); // inner colour
+	&torch_col2_black = c_white; // outer colour
+	
+	event( oTorchBlackLeft, 'step-end', &TorchStepEnd );
+	event( oTorchBlackLeft, 'draw', draw_self );
+	event( oTorchBlackLeft, 'create', @fn {
+		// stop animation
+		image_speed = 0;
+		image_index = rand()*sprite_get_number(sprite_index);
+		
+		// relative light x/y
+		rx = 7;
+		ry = 5;
+		
+		// light scaling/colour
+		scl1 = &torch_scl1; // inner scaling
+		scl2 = &torch_scl2; // outer scaling
+		col1 = &torch_col1_black; // inner colour
+		col2 = &torch_col2_black; // outer colour
+		
+		// draw-light function
+		drawDarkness = &drawBlackTorchDarkness;
+	});
+	
+	event( oTorchBlackRight, 'step-end', &TorchStepEnd );
+	event( oTorchBlackRight, 'draw', draw_self );
+	event( oTorchBlackRight, 'create', @fn {
+		// stop animation
+		image_speed = 0;
+		image_index = rand()*sprite_get_number(sprite_index);
+		
+		// relative light x/y
+		rx = 8;
+		ry = 5;
+		
+		// light scaling/colour
+		scl1 = &torch_scl1; // inner scaling
+		scl2 = &torch_scl2; // outer scaling
+		col1 = &torch_col1_black; // inner colour
+		col2 = &torch_col2_black; // outer colour
+		
+		// draw-darkness function
+		drawDarkness = &drawBlackTorchDarkness;
+	});
+}
+

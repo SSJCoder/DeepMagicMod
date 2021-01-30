@@ -1,0 +1,75 @@
+&close => false;
+
+@onmain -4000 {
+	logclr();
+	room_goto_next();
+}
+
+&oMain => object_add();
+@onmain 4000 {
+	logclr();
+	
+	/*event( &oMain, 'room-start', @fn {
+		'USE oStats !!';
+	});*/
+	
+	//PreMulAllSprites(); msg( 'sprites saved!' );
+	event( &oMain, 'step-begin', @fn {
+		$run();
+		$debugTools();
+		$KeysUpdate();
+		
+		// hold escape to exit
+		@test ( keyboard_check( vk_escape ) ) {
+			$esc_tmr+=ts;
+			@test ( $esc_tmr >= 0.5 ) { game_end() }
+		} @else {
+			$esc_tmr = 0;
+		}
+		
+		//&newFXSparkleDisperse( view_xview[0]+px, view_yview[0]+py, &SP_SMALL,  3, rgb(rand(),rand(),rand()), rand()*360, rand()*100, 100, rand()*3 );
+		//&newFXSparkleDisperse( view_xview[0]+px, view_yview[0]+py, &SP_MEDIUM, 5, rgb(rand(),rand(),rand()), rand()*360, rand()*100, 100, rand()*3 );
+		// &newFXSparkleDisperse (x, y, type, pixel-size, colour, direction, force, friction);
+		
+	});
+	
+	event( &oMain, 'step-end', @fn {
+		@test ( &close ) {
+			!&close;
+			game_end();
+		}
+	});
+	
+	event( &oMain, 'draw', @fn {
+		// draw lighting overlay
+		Light2D_Draw();
+		// draw GUI
+		&GUI_draw();
+		
+		@test ( debug ) {
+			draw_style( c_red, 1.0, ft_stats, fa_left, fa_top );
+			draw_text( view_xview[0]+16, view_yview[0]+16, 'FPS: '+stri(fps) );
+			
+			csDraw();
+			@with (oLight2D) {
+				@test ( surface_exists( surf ) ) {
+					prt( 'wd: '+strf(surface_get_width(surf))+', ht: '+strf(surface_get_height(surf)) );
+				} @else {
+					prt( surf );
+				}
+			}
+		}
+	});
+	
+	event( &oMain, 'close', @fn {
+		&close = true;
+	});
+	
+	@with (create( &oMain )) {
+		persistent = true;
+		depth = -5000;
+	}
+}
+
+$esc_tmr => 0;
+

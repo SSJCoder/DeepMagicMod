@@ -1,0 +1,71 @@
+&TorchStepEnd {
+	imgn~= sprite_get_number(sprite_index);
+	image_index = (image_index+imgn*ts*1.5) % imgn;
+}
+
+&TorchDraw {
+	// draw torch
+	draw_self();
+	// draw inner light
+	draw_set_blend_mode( bm_add );
+	draw_sprite_ext( sLight, 0, round(x)+rx, round(y)+ry, scl1, scl1, 0, col1, 1.0 );
+	draw_set_blend_mode( bm_normal );
+}
+
+&TorchDrawLight {
+	draw_sprite_ext( sLightHD, 0, round(x)+rx-view_xview[0], round(y)+ry-view_yview[0], scl2, scl2, 0, merge_color( c_black, col2, 0.8+rand()*0.2 ), 1.0 );
+}
+
+@onmain {
+	LightEnable( oTorch );
+	
+	&torch_scl1 = 48/sprite_get_width(sLight);
+	&torch_scl2 = 192/sprite_get_width(sLightHD);
+	&torch_col1 = merge_color( c_black, c_orange, 0.35 ); // inner colour
+	&torch_col2 = merge_color( c_orange, c_white, 0.50 ); // outer colour
+	//&torch_col1 = merge_color( c_black, c_red, 0.65 ); // inner colour
+	//&torch_col2 = merge_color( c_red, c_white, 0.20 ); // outer colour
+	
+	event( oTorchLeft, 'step-end', &TorchStepEnd );
+	event( oTorchLeft, 'draw', &TorchDraw );
+	event( oTorchLeft, 'create', @fn {
+		// stop animation
+		image_speed = 0;
+		image_index = rand()*sprite_get_number(sprite_index);
+		
+		// relative light x/y
+		rx = 7;
+		ry = 5;
+		
+		// light scaling/colour
+		scl1 = &torch_scl1; // inner scaling
+		scl2 = &torch_scl2; // outer scaling
+		col1 = &torch_col1; // inner colour
+		col2 = &torch_col2; // outer colour
+		
+		// draw-light function
+		drawLight = &TorchDrawLight;
+	});
+	
+	event( oTorchRight, 'step-end', &TorchStepEnd );
+	event( oTorchRight, 'draw', &TorchDraw );
+	event( oTorchRight, 'create', @fn {
+		// stop animation
+		image_speed = 0;
+		image_index = rand()*sprite_get_number(sprite_index);
+		
+		// relative light x/y
+		rx = 8;
+		ry = 5;
+		
+		// light scaling/colour
+		scl1 = &torch_scl1; // inner scaling
+		scl2 = &torch_scl2; // outer scaling
+		col1 = &torch_col1; // inner colour
+		col2 = &torch_col2; // outer colour
+		
+		// draw-light function
+		drawLight = &TorchDrawLight;
+	});
+}
+

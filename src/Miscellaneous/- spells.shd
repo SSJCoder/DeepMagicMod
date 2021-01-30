@@ -1,0 +1,112 @@
+/*
+
+[i], spell-data:
+       * [0]: icon
+	   * [1]: title
+	   * [2]: colour
+	   * [3]: tier
+	   * [4]: description
+	   * [5]: spell-cost
+	   * [6]: spell-firerate
+	   * [7]: spell-DPS
+	   * [8]: spell-call
+
+*/
+
+@onmain 20 {
+	&spells = [];
+	
+	&spells->add([
+		sLightSpellIcon,        // icon
+		'Weak Light Spell',     // title
+		rgb( 0, 0.60, 0.60 ),   // colour
+		'Common',               // tier
+		'A simple light spell', // description
+		1.0,                    // spell-cost
+		3,                      // spell-firerate
+		10,                     // spell-DPS
+		&CharLightSpell         // spell-call
+	]);
+	
+	&spells->add([
+		sTripleBeamSpellIcon,           // icon
+		'Triple Beam Spell',            // title
+		rgb( 0.80, 0.80, 0.15 ),        // colour
+		'Common',                       // tier
+		'Shoots three beams of energy', // description
+		3.0,                            // spell-cost
+		2.0,                            // spell-firerate
+		55,                             // spell-DPS
+		&CharTripleBeamSpell            // spell-call
+	]);
+	
+	@loop (&spells->size < 9) {
+		&spells->add([
+			sGoldPunchSpellIcon,               // icon
+			'Gold Punch',                      // title
+			rgb( 1.0, 1.0, 0.0 ),              // colour
+			'Common',                          // tier
+			'Knock \'em back into oblivion !', // description
+			85.0/100,                          // spell cost
+			1,                                 // spell-firerate
+			55,                                // spell-DPS
+			&CharGoldPunchSpell                // spell call
+		]);
+	}
+	
+	@loop (&spells->size < 18) {
+		&spells->add([
+			sGoldPunchSpellIcon,               // icon
+			'Gold Punch',                      // title
+			rgb( 1.0, 1.0, 0.0 ),              // colour
+			'Uncommon',                        // tier
+			'Knock \'em back into oblivion !', // description
+			85.0/100,                          // spell cost
+			1,                                 // spell-firerate
+			55,                                // spell-DPS
+			&CharGoldPunchSpell                // spell call
+		]);
+	}
+	
+	@loop (&spells->size < 27) {
+		&spells->add([
+			sGoldPunchSpellIcon,               // icon
+			'Gold Punch',                      // title
+			rgb( 1.0, 1.0, 0.0 ),              // colour
+			'Renown',                          // tier
+			'Knock \'em back into oblivion !', // description
+			85.0/100,                          // spell cost
+			1,                                 // spell-firerate
+			55,                                // spell-DPS
+			&CharGoldPunchSpell                // spell call
+		]);
+	}
+	
+	@loop (&spells->size < 36) {
+		&spells->add([
+			sGoldPunchSpellIcon,               // icon
+			'Gold Punch',                      // title
+			rgb( 1.0, 1.0, 0.0 ),              // colour
+			'Legendary',                       // tier
+			'Knock \'em back into oblivion !', // description
+			85.0/100,                          // spell cost
+			1,                                 // spell-firerate
+			55,                                // spell-DPS
+			&CharGoldPunchSpell                // spell call
+		]);
+	}
+	
+	&spells[29]->free();
+	&spells[29] = [
+		sGoldPunchSpellIcon,                     // icon
+		'Blood Drain',                           // title
+		rgb( 1.0, 0.1, 0.1 ),                    // colour
+		'Legendary',                             // tier
+		'Drains the life force of your enemies', // description
+		0,                                       // spell cost
+		1,                                       // spell-firerate
+		1,                                       // spell-DPS
+		&CharBloodDrainSpell                     // spell call
+	]
+}
+

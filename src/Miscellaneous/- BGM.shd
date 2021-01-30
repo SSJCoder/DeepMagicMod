@@ -1,0 +1,44 @@
+&oBGM => object_add();
+@onmain {
+	&bgmForest = caster_load( 'data/sounds/ForestRealm.ogg' );
+	&bgmTrack  = -1;
+	
+	event( &oBGM, 'step-end', @fn {
+		@test ( caster_error_occurred() ) {
+			msg( 'caster err: '+caster_error_message() );
+		}
+		
+		@test ( keyboard_check( vk_alt ) && keyboard_check_pressed( vk_enter ) ) {
+			@test ( window_get_fullscreen() ) {
+				display_reset();
+				window_set_fullscreen( false );
+			} @else {
+				window_set_fullscreen( true );
+				display_set_size( 640, 480 );
+			}
+		}
+		
+		// update cooldown
+		@test ( Cdw > 0 ) {
+			Cdw-=ts;
+		}
+		
+		@test ( &bgmTrack != -1 ) {
+			@test ( !caster_is_playing( &bgmTrack ) ) {
+				 Cdw = 15+rand()*45;
+				&bgmTrack = -1;
+			}
+		} @else {
+			@test ( Cdw <= 0 ) {
+				// play track
+				&bgmTrack = caster_play( &bgmForest, 1.0, 1.0 );
+			}
+		}
+	})
+	
+	@with(create(&oBGM)) {
+		persistent = true;
+		Cdw = 15;
+	}
+}
+

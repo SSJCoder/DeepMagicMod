@@ -1,0 +1,81 @@
+&oStats => object_add();
+@onmain {
+	event( &oStats, 'room-start', @fn {
+		@test ( exists( oSpawnPortal ) || exists( oWhiteDoor ) || exists( oBlackDoor ) ) {
+			x~= MapGet( &CharMap, 'x' );
+			y~= MapGet( &CharMap, 'y' );
+			
+			@test ( x == -1 && y == -1 ) {
+				@with (oSpawnPortal) {
+					MapSet( &CharMap, [
+						'x', self.x, 
+						'y', self.y
+					]);
+				}
+			}
+			
+			&CharSpawn();
+			
+			// enable lighting
+			Light2D_Enable();
+			Light2D_Colors( 0.10, 0.05, 0.15 );
+			Light2D_Update();
+		} @else {
+			Light2D_Disable();
+		}
+		
+	});
+	
+	@with (create(&oStats)) {
+		persistent = true;
+		
+		&spell_LMB = 0;
+		&spell_RMB = -1;
+		
+		// spells lock status
+		&spell_lock = [];
+		i~=0, e~=&spells->size; @loop (i<e) {
+			&spell_lock->add( false );
+			i++;
+		}
+		
+		// unlock first spell
+		&spell_lock[0]  = false;
+		&spell_lock[1]  = false;
+		&spell_lock[27] = false;
+		&spell_lock[28] = false;
+		
+		// default character map
+		&CharMap = &CharMapDefault();
+		
+		// position/locks ..
+	}
+}
+
+&CharMapDefault {
+	@ret newMap([
+		// cooldown
+		'Cdw', 0, 
+		
+		// health & mana
+		'CurHp', 35, 
+		'MaxHp', 35, 
+		'RegHp', 0.5, 
+		'CurMp', 35, 
+		'MaxMp', 35, 
+		'RegMp', 2.0, 
+		
+		// coordinates
+		'x', -1, 
+		'y', -1, 
+		
+		// physics
+		'ysp', 0, 
+		// spriting
+		'sprite_index', sChar, 
+		'image_index',  0, 
+		'image_speed',  0, 
+		'image_xscale', 1.0
+	]);
+}
+

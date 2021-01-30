@@ -1,0 +1,56 @@
+// &newFXSparkleFall (x, y, type, pixel-size, colour, direction, force, friction, gravity, lifetime);
+&newFXSparkleFall (x, y, type, px, col, dir_, for_, frc_, grv_, life_) {
+	@with (create( x, y, &oFXSparkle )) {
+		// set depth
+		depth = -1000;
+		
+		// store time
+		time = Time();
+		
+		// set properties
+		 dir = dir_;
+		_for = for_;
+		 frc = frc_;
+		 grv = grv_;
+		life = life_;
+		
+		// set force
+		r~,a~ = for_, dir_;
+		hspd = lenx(r,a);
+		vspd = leny(r,a);
+		
+		// initiate sparkle
+		&SparkleInit( type, px, col, @fn {
+			// run-function
+			// lifetime
+			@test ( Time()-time > life ) {
+				destroy();
+			} @else {
+				// get time left
+				t~= 1-(Time()-time)/life;
+				
+				// drawing variables
+				image_xscale = size*t;
+				image_yscale = image_xscale;
+				image_alpha  = 0.5 + 0.5*t*rand();
+				
+				// light scaling
+				lightScaleCur = lightScaleMax*t;
+				
+				draw_set_blend_mode( bm_add );
+				draw_self();
+				draw_set_blend_mode( bm_normal );
+			}
+			
+			// move
+			x+=hspd*ts;
+			y+=vspd*ts;
+			
+			// apply friction
+			hspd = twz( hspd, frc*ts );
+			vspd = twz( vspd, frc*ts )+grv*ts;
+			
+		}, &SparkleDraw );
+	}
+}
+

@@ -1,0 +1,19 @@
+@quit; // no event ..
+
+&partBehaviours => newMap();
+
+@onmain {
+	// disperse (amount, fluctuation, time, fluctuation, 
+	MapSet( &partBehaviours, 'disperse', [@fn {
+		// create event
+		
+		
+	}, @fn {
+		// step event
+		
+	}, @fn {
+		// draw event
+		
+	}]);
+}
+

@@ -1,0 +1,26 @@
+// &OverlayEnable (object);
+// [i]: object must have 'drawOverlay' local function ..
+&OverlayEnable (o) {
+	&overlayList->add( o );
+}
+
+&overlayList => [];
+&overlay => object_add();
+@onmain {
+	event( &overlay, 'draw', @fn {
+		// draw overlay ..
+		i~=0, e~=&overlayList->size; @loop (i<e) {
+			@with (&overlayList[i]) {
+				drawOverlay();
+			}
+			i++;
+		}
+		
+	});
+	
+	@with (create( &overlay )) {
+		persistent = true;
+		depth = -4500;
+	}
+}
+

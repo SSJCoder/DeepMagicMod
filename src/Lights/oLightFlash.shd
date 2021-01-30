@@ -1,0 +1,40 @@
+// &newLightFlash (x, y, colour, brightness, pixel-size, lifetime);
+&newLightFlash (x, y, col_, brt_, px, life_) {
+	@with (create( x, y, &oLightFlash )) {
+		// don't draw
+		visible = false;
+		
+		// sprite settings
+		sprite_index = sLightHD;
+		image_xscale = px/sprite_get_width(sLightHD);
+		image_yscale = image_xscale;
+		image_alpha  = 1.0;
+		image_blend  = merge_color( c_black, col_, brt_ );
+		
+		// set properties
+		lifeMax = life_;
+		lifeCur = life_;
+		    col = col_;
+		    brt = brt_;
+		
+		// light flash
+		drawLight = @fn {
+			draw_sprite_ext( sprite_index, image_index, round(x)-view_xview[0], round(y)-view_yview[0], image_xscale, image_yscale, image_angle, image_blend, image_alpha );
+		}
+	}
+}
+
+&oLightFlash => object_add();
+@onmain {
+	LightEnable( &oLightFlash );
+	
+	event( &oLightFlash, 'step-begin', @fn {
+		lifeCur-=ts;
+		@test ( lifeCur <= 0 ) {
+			destroy();
+		} @else {
+			image_blend = merge_color( c_black, col, lifeCur/lifeMax * brt );
+		}
+	});
+}
+

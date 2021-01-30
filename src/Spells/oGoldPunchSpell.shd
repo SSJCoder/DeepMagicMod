@@ -1,0 +1,109 @@
+@onmain {
+	&sfxGoldPunch    = caster_load( 'data/sounds/sfxGoldPunch.ogg' );
+	&sfxGoldPunchHit = caster_load( 'data/sounds/sfxGoldPunchHit.ogg' );
+}
+
+&sfx_play (sfx) {
+	caster_play( sfx, 1.0*flu(0.15), 1.0*flu(0.15) );
+}
+
+// Gold Punch spell = 55 DPS / enemy / body part
+
+&CharGoldPunchSpell {
+	// cast gold punch spell
+	Cdw += 1.0;
+	r~, a~ = 6, arm.image_angle;
+	&newGoldPunchSpell( arm.x+lenx(r,a), arm.y+leny(r,a), a, 55 );
+	&newFXSpellThrust( arm.x+lenx(r,a), arm.y+leny(r,a), c_yellow, 24, a, 0.35 );
+	
+	// shake camera
+	CamShake( 8 );
+}
+
+&newGoldPunchSpell (x, y, rot_, dmg_) {
+	@with (create( x, y, &oGoldPunchSpell )) {
+		// set depth
+		depth = -125;
+		
+		// set properties
+		rot = rot_;
+		dmg = dmg_;
+		
+		// set speed
+		spd = 1350 * flc( 0.2 );
+		
+		// set sprite & mask
+		sprite_index = sGoldPunchSpell;
+		image_angle  = rot_;
+		
+		// stop animation
+		image_speed = 0;
+
+		// default size
+		size = 1.0;
+		
+		// sfx
+		&sfx_play( &sfxGoldPunch );
+		
+		// hit FX
+		hit = @fn {
+			CamShake( 8 );
+			&newFXWideBeam( x+lenx(45,rot), y+leny(45,rot), 1.0, rot, 1.0, dmg );
+			&sfx_play( &sfxGoldPunchHit );
+		}
+		
+		// no destroy fx
+		NoFXFlag = 0;
+		
+		@ret id;
+		
+	}
+}
+
+&oGoldPunchSpell => object_add();
+@onmain {
+	event( &oGoldPunchSpell, 'step', @fn {
+		// move
+		x+=lenx(spd*ts,rot);
+		y+=leny(spd*ts,rot);
+		
+		@test ( place_meeting( x, y, oBlock ) ) {
+			// fx
+			@test ( !NoFXFlag ) { hit() }
+			// destroy
+			destroy();
+		}
+		
+		@test ( is_outside() ) {
+			destroy();
+		}
+		
+		enm~= instance_place( x, y, oEnemy );
+		@test ( enm != noone ) {
+			// FX
+			hit();
+			
+			// clear spell
+			destroy();
+		}
+		
+		@test ( place_meeting( x, y, oLavaTop ) ) {
+			NoFXFlag = 1;
+			   depth = 1500;
+		}
+		
+		wasp~= instance_place( x, y, oWasp );
+		@test ( wasp != noone ) {
+			destroy( wasp );
+		}
+		
+	});
+	
+	event( &oGoldPunchSpell, 'draw', @fn {
+		draw_set_blend_mode( bm_add );
+		draw_self();
+		draw_set_blend_mode( bm_normal );
+		
+	});
+}
+
